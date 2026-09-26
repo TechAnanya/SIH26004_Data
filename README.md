@@ -2,10 +2,6 @@
 
 **Integrated AI Platform for Knee Osteoarthritis Screening**
 
-![Python](https://img.shields.io/badge/python-3.9%20--%203.11-blue)
-![Streamlit](https://img.shields.io/badge/framework-Streamlit-FF4B4B)
-![Status](https://img.shields.io/badge/status-prototype-orange)
-
 Team Apex · Smart India Hackathon 2026 · PS# SIH26004 · Theme: MedTech / BioTech / HealthTech
 
 A modular Streamlit application for preliminary osteoarthritis (OA) screening in primary healthcare centres, rural health camps, and community outreach programs — built for regions like the North Eastern Region (NER) where a single diagnostic tool (X-ray, trained physiotherapist, gait lab) often isn't available on-site.
@@ -15,8 +11,6 @@ A modular Streamlit application for preliminary osteoarthritis (OA) screening in
 ## Table of Contents
 
 - [Three Independent Screening Pathways](#three-independent-screening-pathways)
-- [Screenshots](#screenshots)
-- [Demo Video](#demo-video)
 - [Setup](#setup)
 - [Hardware Module](#hardware-module)
 - [Wiring Up the Real G5 Model](#wiring-up-the-real-g5-model)
@@ -39,30 +33,6 @@ A modular Streamlit application for preliminary osteoarthritis (OA) screening in
 The three pathways are never combined, averaged, or turned into a single overall probability — they are fully independent by design, each with its own result screen and its own downloadable PDF report. A health worker screens with whatever is available on-site.
 
 > **Where does AI fit in each pathway?** Hardware uses no ML/AI at all. Software's G5 model directly classifies the X-ray as Normal/OA. AI Posture Detection uses a pre-trained AI model (MediaPipe) only to *locate* hip/knee/ankle landmarks in the photo — the risk flag itself (varus/valgus, asymmetry) is then a plain threshold comparison on the measured angle, the same style of rule engine as the Hardware pathway.
-
----
-
-## Screenshots
-
-| Dashboard | Hardware Pathway | Software Pathway (Grad-CAM) | AI Posture Detection |
-|---|---|---|---|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Hardware](docs/screenshots/hardware.png) | ![Software](docs/screenshots/software.png) | ![Posture](docs/screenshots/posture.png) |
-
-> Add your own screenshots to a `docs/screenshots/` folder in the repo (create it if it doesn't exist) using these exact filenames, or update the paths above to match whatever filenames/folder you use. GitHub renders these automatically once the images are committed — no extra setup needed.
-
----
-
-## Demo Video
-
-A full walkthrough of the app (all three screening pathways, end to end) is available here:
-
-**[Watch the demo video](docs/videos/sandhisetu_demo.mp4)**
-
-> GitHub doesn't autoplay `.mp4` files inside the README, but a link like the one above still lets anyone click through and watch it directly on GitHub (or download it) once the video file is committed to `docs/videos/`. If the file is large, either use [Git LFS](https://git-lfs.com/) or upload it as an asset on a GitHub Release and link to that URL instead. Alternatively, host it on YouTube (unlisted is fine) and swap the line above for a clickable thumbnail:
->
-> ```markdown
-> [![Watch the demo](docs/screenshots/video_thumbnail.png)](https://youtu.be/YOUR_VIDEO_ID)
-> ```
 
 ---
 
@@ -112,12 +82,7 @@ The Hardware OA Risk Marker pathway is built around a low-cost wearable sensor u
 
 ### Circuit Simulation (Tinkercad)
 
-Before physical assembly, the full sensor circuit was simulated in **Tinkercad Circuits** to validate the wiring (ESP32 ↔ TCA9548A ↔ 3× MPU6050, plus the FSR voltage-divider inputs) and confirm the I2C multiplexing logic addresses each IMU correctly before committing to hardware. The Tinkercad simulation link and circuit schematic are below:
-
-- **Tinkercad simulation:** [Add your Tinkercad share link here]
-- **Circuit diagram:** ![Hardware circuit diagram](docs/screenshots/hardware_circuit_diagram.png)
-
-> Add your Tinkercad project's public share link above (Tinkercad → Share → Public link), and place the circuit diagram image in `docs/screenshots/` so it renders here.
+Before physical assembly, the full sensor circuit was simulated in **Tinkercad Circuits** to validate the wiring (ESP32 ↔ TCA9548A ↔ 3× MPU6050, plus the FSR voltage-divider inputs) and confirm the I2C multiplexing logic addresses each IMU correctly before committing to hardware.
 
 ### Live vs. Demonstration Mode
 
@@ -245,11 +210,7 @@ oa_screening_app/
 │   └── temp/                    # Runtime scratch space for report-embedded images (auto-cleaned)
 │
 ├── models/                      # Place the trained G5 model file here (final_model.h5 / .pt)
-├── reports/                     # (optional) local copies of generated PDF reports
-│
-└── docs/                        # Not code — README assets (create as needed)
-    ├── screenshots/             # App screenshots + hardware circuit diagram referenced above
-    └── videos/                  # Demo video referenced above
+└── reports/                     # (optional) local copies of generated PDF reports
 ```
 
 ---
