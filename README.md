@@ -4,7 +4,6 @@
 
 ![Python](https://img.shields.io/badge/python-3.9%20--%203.11-blue)
 ![Streamlit](https://img.shields.io/badge/framework-Streamlit-FF4B4B)
-![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-prototype-orange)
 
 Team Apex · Smart India Hackathon 2026 · PS# SIH26004 · Theme: MedTech / BioTech / HealthTech
@@ -16,13 +15,15 @@ A modular Streamlit application for preliminary osteoarthritis (OA) screening in
 ## Table of Contents
 
 - [Three Independent Screening Pathways](#three-independent-screening-pathways)
+- [Screenshots](#screenshots)
+- [Demo Video](#demo-video)
 - [Setup](#setup)
+- [Hardware Module](#hardware-module)
 - [Wiring Up the Real G5 Model](#wiring-up-the-real-g5-model)
 - [AI Posture Detection](#ai-posture-detection)
 - [Updating the Hardware Rule Thresholds](#updating-the-hardware-rule-thresholds)
 - [Project Structure](#project-structure)
 - [Important Notes](#important-notes)
-- [License](#license)
 
 ---
 
@@ -38,6 +39,30 @@ A modular Streamlit application for preliminary osteoarthritis (OA) screening in
 The three pathways are never combined, averaged, or turned into a single overall probability — they are fully independent by design, each with its own result screen and its own downloadable PDF report. A health worker screens with whatever is available on-site.
 
 > **Where does AI fit in each pathway?** Hardware uses no ML/AI at all. Software's G5 model directly classifies the X-ray as Normal/OA. AI Posture Detection uses a pre-trained AI model (MediaPipe) only to *locate* hip/knee/ankle landmarks in the photo — the risk flag itself (varus/valgus, asymmetry) is then a plain threshold comparison on the measured angle, the same style of rule engine as the Hardware pathway.
+
+---
+
+## Screenshots
+
+| Dashboard | Hardware Pathway | Software Pathway (Grad-CAM) | AI Posture Detection |
+|---|---|---|---|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Hardware](docs/screenshots/hardware.png) | ![Software](docs/screenshots/software.png) | ![Posture](docs/screenshots/posture.png) |
+
+> Add your own screenshots to a `docs/screenshots/` folder in the repo (create it if it doesn't exist) using these exact filenames, or update the paths above to match whatever filenames/folder you use. GitHub renders these automatically once the images are committed — no extra setup needed.
+
+---
+
+## Demo Video
+
+A full walkthrough of the app (all three screening pathways, end to end) is available here:
+
+**[Watch the demo video](docs/videos/sandhisetu_demo.mp4)**
+
+> GitHub doesn't autoplay `.mp4` files inside the README, but a link like the one above still lets anyone click through and watch it directly on GitHub (or download it) once the video file is committed to `docs/videos/`. If the file is large, either use [Git LFS](https://git-lfs.com/) or upload it as an asset on a GitHub Release and link to that URL instead. Alternatively, host it on YouTube (unlisted is fine) and swap the line above for a clickable thumbnail:
+>
+> ```markdown
+> [![Watch the demo](docs/screenshots/video_thumbnail.png)](https://youtu.be/YOUR_VIDEO_ID)
+> ```
 
 ---
 
@@ -63,6 +88,40 @@ streamlit run app.py
 > **Why `tf-keras` too?** The supplied `final_model.h5` was trained and saved with TF 2.15's Keras 2 engine. Modern TensorFlow ships Keras 3 by default, which cannot correctly rebuild this model's nested Functional graph (you'll see errors like `DepthwiseConv2D ... unrecognized keyword 'groups'` or `Invalid Functional model configuration ... loops or disconnected nodes` if `tf-keras` is missing). Installing `tf-keras` and letting `utils/model_loader.py` set `TF_USE_LEGACY_KERAS=1` (already wired in) loads the model with the same Keras 2 engine that wrote it, sidestepping the incompatibility entirely.
 
 **Requirements:** Python 3.9–3.11 (MediaPipe does not currently publish wheels for every Python version).
+
+---
+
+## Hardware Module
+
+The Hardware OA Risk Marker pathway is built around a low-cost wearable sensor unit — no ML/AI runs on this pathway, every result is a plain threshold comparison (see [Updating the Hardware Rule Thresholds](#updating-the-hardware-rule-thresholds)).
+
+### Components
+
+| Component | Role |
+|---|---|
+| ESP32 DevKit V1 | Main controller — Wi-Fi/BLE enabled, reads all sensor channels and streams them to the app |
+| 3× MPU6050 (IMU) | Knee ROM sensor (flexion/extension range of motion) + 2× gait sensors (thigh/shin) for walking cadence and gait-cycle asymmetry |
+| TCA9548A I2C Multiplexer | All three MPU6050 units share the same I2C address, so the multiplexer switches between them on separate channels |
+| 2× FSR (Force-Sensitive Resistors) | Insole-mounted, one per foot — measure left-right load-bearing (plantar pressure) asymmetry |
+
+### Wiring
+
+- Each MPU6050 connects to its own TCA9548A channel (SDA/SCL), rather than sharing the I2C bus directly, since all three units default to the same I2C address.
+- The two FSR sensors connect to ESP32 analog input pins (via a simple voltage-divider circuit).
+- ESP32 streams all four readings (Knee ROM, cadence, gait asymmetry, pressure asymmetry) over Wi-Fi/BLE to the app.
+
+### Circuit Simulation (Tinkercad)
+
+Before physical assembly, the full sensor circuit was simulated in **Tinkercad Circuits** to validate the wiring (ESP32 ↔ TCA9548A ↔ 3× MPU6050, plus the FSR voltage-divider inputs) and confirm the I2C multiplexing logic addresses each IMU correctly before committing to hardware. The Tinkercad simulation link and circuit schematic are below:
+
+- **Tinkercad simulation:** [Add your Tinkercad share link here]
+- **Circuit diagram:** ![Hardware circuit diagram](docs/screenshots/hardware_circuit_diagram.png)
+
+> Add your Tinkercad project's public share link above (Tinkercad → Share → Public link), and place the circuit diagram image in `docs/screenshots/` so it renders here.
+
+### Live vs. Demonstration Mode
+
+If no ESP32 is physically connected, the app's Hardware pathway falls back to a **Demonstration / Manual Input Mode**, where the four sensor values are entered manually — useful for testing the risk engine, PDF report generation, and UI without the physical unit present. The live-device serial/BLE/HTTP reader is a wiring point in `components/hardware_module.py` (`render_hardware_module()`), ready to be connected to the actual ESP32 firmware's data stream.
 
 ---
 
@@ -143,34 +202,54 @@ All sensor/history thresholds and scoring weights live in `config/thresholds.py`
 
 ## Project Structure
 
+Full repository file tree, as it appears in VS Code's Explorer:
+
 ```
-app.py                          Main Streamlit app + navigation + workflow
-components/
-  patient_form.py               Basic info + history forms
-  hardware_module.py            Hardware pathway UI
-  software_module.py            Software pathway UI
-  posture_module.py             AI Posture Detection pathway UI
-utils/
-  patient_utils.py              calculate_bmi(), validation
-  hardware_risk_engine.py       process_sensor_data(), evaluate_hardware_risk()
-  image_utils.py                X-ray validation + preprocessing
-  model_loader.py               load_image_model() for the G5 model
-  predictor.py                  predict_image()
-  tf_architecture.py            Shared nested-backbone / conv-layer discovery
-  heatmap_utils.py              overlay_heatmap(), get_high_activation_regions()
-  gradcam.py                    generate_gradcam()
-  scorecam.py                   generate_scorecam()
-  lime_explain.py               generate_lime_explanation()
-  posture_analysis.py           analyze_posture_image() -- MediaPipe HKA angle + thresholds
-  pdf_report.py                 generate_*_pdf_report() (Hardware + Software + Posture)
-  ui_helpers.py                 Shared HTML/CSS dashboard components
-config/
-  settings.py                   Paths, G5 model config, disclaimer text
-  thresholds.py                 Configurable clinical thresholds & weights (Hardware + Posture)
-assets/style.css                Healthcare dashboard theme
-models/                         Place the trained G5 model file here (final_model.h5)
-test_model.py                   Standalone CLI: load -> predict -> Grad-CAM on one image
-streamlit_test_app.py           Standalone minimal Streamlit test app (no patient forms)
+oa_screening_app/
+├── app.py                       # Main Streamlit app: page config, navigation, 4-step workflow router
+├── requirements.txt             # Python dependencies
+├── README.md
+├── test_model.py                # Standalone CLI: load -> predict -> Grad-CAM on one image
+├── streamlit_test_app.py        # Standalone minimal Streamlit test app (no patient forms)
+│
+├── components/                  # UI + orchestration layer (one module per screening pathway)
+│   ├── __init__.py
+│   ├── patient_form.py          # Basic info + history intake forms (shared by all 3 pathways)
+│   ├── hardware_module.py       # Hardware pathway UI (sensor input -> risk engine -> report)
+│   ├── software_module.py       # Software pathway UI (X-ray -> G5 model -> Grad-CAM/Score-CAM/LIME -> report)
+│   └── posture_module.py        # AI Posture Detection pathway UI (photo -> MediaPipe -> HKA angle -> report)
+│
+├── utils/                       # Core logic layer — no Streamlit imports, independently testable
+│   ├── __init__.py
+│   ├── patient_utils.py         # calculate_bmi(), classify_bmi(), input validation
+│   ├── hardware_risk_engine.py  # process_sensor_data(), evaluate_hardware_risk() — pure rule engine, no ML
+│   ├── image_utils.py           # X-ray upload validation + preprocessing
+│   ├── model_loader.py          # load_image_model() — loads the G5 model (PyTorch or TensorFlow)
+│   ├── predictor.py             # predict_image() — runs inference on the loaded G5 model
+│   ├── tf_architecture.py       # Shared nested-backbone / conv-layer discovery (Grad-CAM + Score-CAM)
+│   ├── gradcam.py               # generate_gradcam()
+│   ├── scorecam.py              # generate_scorecam()
+│   ├── lime_explain.py          # generate_lime_explanation()
+│   ├── heatmap_utils.py         # overlay_heatmap(), get_high_activation_regions()
+│   ├── posture_analysis.py      # analyze_posture_image() — MediaPipe pose detection + HKA angle + thresholds
+│   ├── pdf_report.py            # generate_hardware/software/posture_pdf_report() — independent PDF builders
+│   └── ui_helpers.py            # Shared HTML/CSS dashboard components (cards, badges, risk banners)
+│
+├── config/                      # Configuration — no logic, just constants
+│   ├── __init__.py
+│   ├── settings.py              # Paths, G5 model config, branding, medical disclaimer text
+│   └── thresholds.py            # All clinical thresholds & risk-score weights (Hardware + Posture)
+│
+├── assets/
+│   ├── style.css                # Healthcare dashboard theme (colors, cards, badges, layout)
+│   └── temp/                    # Runtime scratch space for report-embedded images (auto-cleaned)
+│
+├── models/                      # Place the trained G5 model file here (final_model.h5 / .pt)
+├── reports/                     # (optional) local copies of generated PDF reports
+│
+└── docs/                        # Not code — README assets (create as needed)
+    ├── screenshots/             # App screenshots + hardware circuit diagram referenced above
+    └── videos/                  # Demo video referenced above
 ```
 
 ---
@@ -187,7 +266,3 @@ streamlit_test_app.py           Standalone minimal Streamlit test app (no patien
 ## Team
 
 Built by **Team Apex** for Smart India Hackathon 2026 — Problem Statement SIH26004 (Ministry of Development of North Eastern Region), Theme: MedTech / BioTech / HealthTech.
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details. *(Add a `LICENSE` file to the repo root, or replace this section if you're using a different license.)*
